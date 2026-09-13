@@ -20,7 +20,7 @@ model Client {
   companyName    String?
   companyAddress String?
   country        String
-  status         String
+  status         String    @default("active")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   projects       Project[]
