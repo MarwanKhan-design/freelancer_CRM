@@ -28,9 +28,18 @@ export async function PATCH(
     return Response.json({ error: result.error.flatten() }, { status: 400 });
   }
 
+  if (result.data.clientId) {
+    const client = await prisma.client.findUnique({
+      where: { id: result.data.clientId },
+    });
+    if (!client) {
+      return Response.json({ error: "Client Not found" }, {status: 404});
+    }
+  }
+
   try {
     const updatedProject = await prisma.project.update({
-      where: { id: id },
+      where: { id },
       data: result.data,
     });
 
