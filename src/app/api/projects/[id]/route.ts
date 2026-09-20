@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { updateProjectSchema } from "@/lib/validations/project";
 
@@ -33,14 +34,22 @@ export async function PATCH(
       where: { id: result.data.clientId },
     });
     if (!client) {
-      return Response.json({ error: "Client Not found" }, {status: 404});
+      return Response.json({ error: "Client Not found" }, { status: 404 });
     }
   }
 
   try {
     const updatedProject = await prisma.project.update({
       where: { id },
-      data: result.data,
+      data: {
+        ...result.data,
+        budgetValue: result.data.budgetValue
+          ? new Prisma.Decimal(result.data.budgetValue)
+          : undefined,
+        deadline: result.data.deadline
+          ? new Date(result.data.deadline)
+          : undefined,
+      },
     });
 
     return Response.json(updatedProject);
