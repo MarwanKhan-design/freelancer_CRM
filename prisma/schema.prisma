@@ -50,6 +50,7 @@ model Project {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   tasks               Task[]
+  meetings            Meeting[]
 }
 
 model Task {
@@ -75,4 +76,21 @@ enum TaskPriority {
   Low
   Medium
   High
+}
+
+model Meeting {
+  id        String        @id @default(uuid())
+  project   Project       @relation(fields: [projectId], references: [id])
+  projectId String
+  startsAt  DateTime
+  duration  Int?
+  notes     String?
+  status    MeetingStatus @default(Scheduled)
+}
+
+enum MeetingStatus {
+  Scheduled
+  Started
+  Finished
+  Cancelled
 }
