@@ -1,4 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
+import { getCurrentUserId } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { updateProjectSchema } from "@/lib/validations/project";
 
@@ -7,7 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const project = await prisma.project.findUnique({ where: { id } });
+  const userId = await getCurrentUserId();
+  const project = await prisma.project.findUnique({
+    where: { id, client: { userId } },
+  });
 
   if (!project) {
     return Response.json({ error: "Project not found" }, { status: 404 });
@@ -22,6 +26,7 @@ export async function PATCH(
 ) {
   const body = await request.json();
   const { id } = await params;
+  const userId = await getCurrentUserId()
 
   const result = updateProjectSchema.safeParse(body);
 
@@ -31,7 +36,7 @@ export async function PATCH(
 
   if (result.data.clientId) {
     const client = await prisma.client.findUnique({
-      where: { id: result.data.clientId },
+      where: { id: result.data.clientId, userId },
     });
     if (!client) {
       return Response.json({ error: "Client Not found" }, { status: 404 });
@@ -40,7 +45,7 @@ export async function PATCH(
 
   try {
     const updatedProject = await prisma.project.update({
-      where: { id },
+      where: { id, client: {userId} },
       data: {
         ...result.data,
         budgetValue: result.data.budgetValue

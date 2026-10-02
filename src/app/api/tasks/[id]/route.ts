@@ -1,3 +1,4 @@
+import { getCurrentUserId } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { taskUpdateSchema } from "@/lib/validations/tasks";
 
@@ -6,8 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const userId = await getCurrentUserId();
   const task = await prisma.task.findUnique({
-    where: { id },
+    where: { id, project: { client: { userId } } },
     include: { project: true },
   });
   if (!task) {
@@ -23,7 +25,11 @@ export async function PATCH(
   const body = await req.json();
   const { id } = await params;
 
-  const task = await prisma.task.findUnique({ where: { id } });
+  const userId = await getCurrentUserId();
+
+  const task = await prisma.task.findUnique({
+    where: { id, project: { client: { userId } } },
+  });
   if (!task) {
     return Response.json({ error: "Task not found" }, { status: 404 });
   }
@@ -36,14 +42,14 @@ export async function PATCH(
 
   if (result.data.projectId) {
     const project = await prisma.project.findUnique({
-      where: { id: result.data.projectId },
+      where: { id: result.data.projectId, client: { userId } },
     });
     if (!project) {
       return Response.json({ error: "Project Not Found" }, { status: 404 });
     }
   }
   const updatedTask = await prisma.task.update({
-    where: { id },
+    where: { id, project: { client: { userId } } },
     data: result.data,
   });
 

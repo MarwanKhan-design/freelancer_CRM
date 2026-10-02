@@ -1,3 +1,4 @@
+import { getCurrentUserId } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { updatedMeetingSchema } from "@/lib/validations/meetings";
 
@@ -6,9 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const userId = await getCurrentUserId();
 
   const meeting = await prisma.meeting.findUnique({
-    where: { id },
+    where: { id, project: { client: { userId } } },
     include: { project: true },
   });
 
@@ -16,7 +18,7 @@ export async function GET(
     return Response.json({ error: "Meeting does not exist" }, { status: 404 });
   }
 
-  return Response.json({ meeting }, { status: 200 });
+  return Response.json(meeting, { status: 200 });
 }
 
 export async function PATCH(
@@ -25,8 +27,11 @@ export async function PATCH(
 ) {
   const body = await req.json();
   const { id } = await params;
+  const userId = await getCurrentUserId();
 
-  const meeting = await prisma.meeting.findUnique({ where: { id } });
+  const meeting = await prisma.meeting.findUnique({
+    where: { id, project: { client: { userId } } },
+  });
   if (!meeting) {
     return Response.json({ error: "Meeting Not found" }, { status: 404 });
   }
@@ -39,7 +44,7 @@ export async function PATCH(
 
   if (result.data.projectId) {
     const project = await prisma.project.findUnique({
-      where: { id: result.data.projectId },
+      where: { id: result.data.projectId, client: { userId } },
     });
     if (!project) {
       return Response.json({ error: "Project not found" }, { status: 404 });
@@ -51,7 +56,7 @@ export async function PATCH(
     : undefined;
 
   const updatedMeeting = await prisma.meeting.update({
-    where: { id },
+    where: { id, project: { client: { userId } } },
     data: { ...result.data, startsAt: updatedStartsAt },
   });
 

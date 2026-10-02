@@ -24,6 +24,8 @@ model Client {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   projects       Project[]
+  user           User      @relation(fields: [userId], references: [id])
+  userId         String
 }
 
 enum ProjectStatus {
@@ -42,8 +44,8 @@ model Project {
   description         String?
   inCollaborationWith String?
   deadline            DateTime?
-  budgetValue         Decimal
-  budgetCurrency      String
+  budgetValue         Decimal?
+  budgetCurrency      String?
   message             String?
   deploymentLink      String?
   status              ProjectStatus @default(Planning)
@@ -93,4 +95,20 @@ enum MeetingStatus {
   Started
   Finished
   Cancelled
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  status       UserStatus @default(Active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  clients      Client[]
+}
+
+enum UserStatus {
+  Active
+  Inactive
 }

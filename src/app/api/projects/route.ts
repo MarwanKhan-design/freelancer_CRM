@@ -1,9 +1,14 @@
 import { Prisma } from "@/generated/prisma/client";
+import { getCurrentUserId } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { projectSchema } from "@/lib/validations/project";
 
 export async function GET() {
-  const projects = await prisma.project.findMany();
+  const userId = await getCurrentUserId();
+
+  const projects = await prisma.project.findMany({
+    where: { client: { userId } },
+  });
 
   return Response.json(projects);
 }
@@ -16,9 +21,10 @@ export async function POST(request: Request) {
   if (!result.success) {
     return Response.json({ error: result.error.flatten() }, { status: 400 });
   }
+  const userId = await getCurrentUserId();
 
   const client = await prisma.client.findUnique({
-    where: { id: result.data?.clientId },
+    where: { id: result.data?.clientId, userId },
   });
 
   if (!client) {
@@ -28,7 +34,9 @@ export async function POST(request: Request) {
   const project = await prisma.project.create({
     data: {
       ...result.data,
-      budgetValue: new Prisma.Decimal(result.data.budgetValue),
+      budgetValue: result.data.budgetValue
+        ? new Prisma.Decimal(result.data.budgetValue)
+        : undefined,
       deadline: result.data.deadline
         ? new Date(result.data.deadline)
         : undefined,
