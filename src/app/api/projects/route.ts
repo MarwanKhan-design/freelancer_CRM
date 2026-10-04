@@ -1,19 +1,20 @@
 import { Prisma } from "@/generated/prisma/client";
-import { getCurrentUserId } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/api-error";
+import { requireAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { projectSchema } from "@/lib/validations/project";
 
-export async function GET() {
-  const userId = await getCurrentUserId();
+export const GET = withErrorHandling(async function () {
+  const userId = await requireAuth();
 
   const projects = await prisma.project.findMany({
     where: { client: { userId } },
   });
 
   return Response.json(projects);
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withErrorHandling(async function (request: Request) {
   const body = await request.json();
 
   const result = projectSchema.safeParse(body);
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
   if (!result.success) {
     return Response.json({ error: result.error.flatten() }, { status: 400 });
   }
-  const userId = await getCurrentUserId();
+  const userId = await requireAuth();
 
   const client = await prisma.client.findUnique({
     where: { id: result.data?.clientId, userId },
@@ -44,4 +45,4 @@ export async function POST(request: Request) {
   });
 
   return Response.json(project, { status: 201 });
-}
+});

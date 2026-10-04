@@ -1,13 +1,14 @@
-import { getCurrentUserId } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/api-error";
+import { requireAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { updateClientSchema } from "@/lib/validations/client";
 
-export async function GET(
+export const GET = withErrorHandling(async function (
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const userId = await getCurrentUserId()
+  const userId = await requireAuth();
   const client = await prisma.client.findUnique({ where: { id, userId } });
 
   if (!client) {
@@ -15,15 +16,15 @@ export async function GET(
   }
 
   return Response.json(client);
-}
+});
 
-export async function PATCH(
+export const PATCH = withErrorHandling(async function (
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const body = await request.json();
   const { id } = await params;
-  const userId =await getCurrentUserId()
+  const userId = await requireAuth();
 
   const result = updateClientSchema.safeParse(body);
 
@@ -40,5 +41,4 @@ export async function PATCH(
   } catch (error) {
     return Response.json({ error: "Client not found" }, { status: 404 });
   }
-}
- 
+});

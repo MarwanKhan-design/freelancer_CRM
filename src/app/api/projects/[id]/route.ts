@@ -1,14 +1,15 @@
 import { Prisma } from "@/generated/prisma/client";
-import { getCurrentUserId } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/api-error";
+import { requireAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { updateProjectSchema } from "@/lib/validations/project";
 
-export async function GET(
+export const GET = withErrorHandling(async function (
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const userId = await getCurrentUserId();
+  const userId = await requireAuth();
   const project = await prisma.project.findUnique({
     where: { id, client: { userId } },
   });
@@ -18,15 +19,15 @@ export async function GET(
   }
 
   return Response.json(project);
-}
+});
 
-export async function PATCH(
+export const PATCH = withErrorHandling(async function (
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const body = await request.json();
   const { id } = await params;
-  const userId = await getCurrentUserId()
+  const userId = await requireAuth();
 
   const result = updateProjectSchema.safeParse(body);
 
@@ -61,4 +62,4 @@ export async function PATCH(
   } catch (error) {
     return Response.json({ error: "Project Not found" }, { status: 404 });
   }
-}
+});

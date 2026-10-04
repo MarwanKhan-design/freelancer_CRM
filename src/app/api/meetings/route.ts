@@ -1,18 +1,19 @@
-import { getCurrentUserId } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/api-error";
+import { requireAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { meetingSchema } from "@/lib/validations/meetings";
 
-export async function GET() {
-  const userId = await getCurrentUserId();
+export const GET = withErrorHandling(async function () {
+  const userId = await requireAuth();
   const meetings = await prisma.meeting.findMany({
     include: { project: true },
     where: { project: { client: { userId } } },
   });
 
   return Response.json(meetings);
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withErrorHandling(async function (req: Request) {
   const body = await req.json();
 
   const result = meetingSchema.safeParse(body);
@@ -21,10 +22,10 @@ export async function POST(req: Request) {
     return Response.json({ error: result.error.flatten() }, { status: 400 });
   }
 
-  const userId = await getCurrentUserId()
+  const userId = await requireAuth();
 
   const project = await prisma.project.findUnique({
-    where: { id: result.data.projectId, client:{userId} },
+    where: { id: result.data.projectId, client: { userId } },
   });
 
   if (!project) {
@@ -38,4 +39,4 @@ export async function POST(req: Request) {
   });
 
   return Response.json(meeting);
-}
+});

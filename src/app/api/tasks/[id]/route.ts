@@ -1,13 +1,14 @@
-import { getCurrentUserId } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/api-error";
+import { requireAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { taskUpdateSchema } from "@/lib/validations/tasks";
 
-export async function GET(
+export const GET = withErrorHandling(async function (
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const userId = await getCurrentUserId();
+  const userId = await requireAuth();
   const task = await prisma.task.findUnique({
     where: { id, project: { client: { userId } } },
     include: { project: true },
@@ -16,16 +17,16 @@ export async function GET(
     return Response.json({ error: "Task not Found" }, { status: 404 });
   }
   return Response.json(task, { status: 200 });
-}
+});
 
-export async function PATCH(
+export const PATCH = withErrorHandling(async function (
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const body = await req.json();
   const { id } = await params;
 
-  const userId = await getCurrentUserId();
+  const userId = await requireAuth();
 
   const task = await prisma.task.findUnique({
     where: { id, project: { client: { userId } } },
@@ -54,4 +55,4 @@ export async function PATCH(
   });
 
   return Response.json(updatedTask);
-}
+});

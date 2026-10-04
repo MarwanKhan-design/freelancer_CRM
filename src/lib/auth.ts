@@ -1,6 +1,14 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
+
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("Unauthorized");
+    this.name = "UnauthorizedError";
+  }
+}
+
 export async function createToken(userId: string) {
   const secret = process.env.JWT_SECRET;
 
@@ -19,7 +27,7 @@ export async function createToken(userId: string) {
   return token;
 }
 
-export async function verifyToken(token:string) {
+export async function verifyToken(token: string) {
   const secret = process.env.JWT_SECRET;
 
   if (!secret) {
@@ -27,28 +35,39 @@ export async function verifyToken(token:string) {
   }
 
   const secretKey = new TextEncoder().encode(secret);
-  
-    const { payload } = await jwtVerify(token, secretKey);
 
-    if (typeof payload.userId !== "string") {
-      throw new Error('User Id is not defined')
-   }
+  const { payload } = await jwtVerify(token, secretKey);
 
-  return payload.userId
-}
-
-export async function getCurrentUserId(){
-  const cookieStore = await cookies()
-
-  const token = cookieStore.get('auth_token')?.value
-
-  if(!token){
-    throw new Error('Token not provided')
+  if (typeof payload.userId !== "string") {
+    throw new Error("User Id is not defined");
   }
 
-  const userId = await verifyToken(token)
+  return payload.userId;
+}
 
+export async function getCurrentUserId() {
+  const cookieStore = await cookies();
+
+  const token = cookieStore.get("auth_token")?.value;
+
+  if (!token) {
+    return null
+  }
+
+  try {
+    const userId = await verifyToken(token);
+    return userId;
+  } catch {
+    return null
+  }
+}
+
+
+export async function requireAuth(){
+  const userId = await getCurrentUserId()
+
+  if(userId === null){
+    throw new UnauthorizedError()
+  }
   return userId
-
-
 }
