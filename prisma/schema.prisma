@@ -53,6 +53,7 @@ model Project {
   updatedAt           DateTime      @updatedAt
   tasks               Task[]
   meetings            Meeting[]
+  invoice             Invoice[]
 }
 
 model Task {
@@ -111,4 +112,51 @@ model User {
 enum UserStatus {
   Active
   Inactive
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String
+  currency      String
+  issueDate     DateTime      @default(now())
+  dueDate       DateTime?
+  status        InvoiceStatus @default(Draft)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  payments      Payment[]
+  items         InvoiceItem[]
+  project       Project       @relation(fields: [projectId], references: [id])
+  projectId     String
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId   String
+  description String
+  quantity    Int
+  unitPrice   Decimal?
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId String
+  amount    Decimal?
+  paidAt    DateTime @default(now())
+  method    String?
+  reference String?
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+enum InvoiceStatus {
+  Draft
+  Sent
+  PartiallyPaid
+  Paid
+  Overdue
+  Cancelled
 }
